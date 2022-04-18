@@ -54,7 +54,7 @@ public class ParameterBinder : BinderBase<Parameter>
       if (harList.Any())
       {
         if (harList.Count() == 1) dirName = $"{harList.First().FullName}.dl";
-        if (harList.Count() > 1) dirName = $"hars.dl";
+        if (harList.Count() > 1) dirName = $"{harList.First().DirectoryName}\\hars.dl";
       }
       destination = new DirectoryInfo(dirName);
     }

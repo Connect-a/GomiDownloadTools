@@ -25,11 +25,7 @@ public class Downloader
     Parallel.ForEachAsync(uris, async (uri, token) =>
     {
       _logger.LogInformation($"Downloading > {uri.AbsoluteUri}");
-        // Construct FilePath
-      var fileName = Path.GetFileName(uri.AbsolutePath);
-      if (string.IsNullOrEmpty(fileName)) fileName = "index.html";
-      var dir = $"{_options.Destination.FullName}/{uri.Authority}/{Path.GetDirectoryName(uri.AbsolutePath)}/".Replace("//", "/");
-      var filePath = $"{dir}{fileName}";
+      var filePath = FilePathConstructor.ConvertUriToFilePath(_options.Destination, uri);
       if (File.Exists(filePath))
       {
         _existsCount++;
@@ -38,24 +34,24 @@ public class Downloader
       if (_downloadedFiles.Contains(filePath)) return;
       _downloadedFiles.Add(filePath);
 
-        // Check socket connection status.
-        // HACK: For reduce the number of SocketException.
+      // Check socket connection status.
+      // HACK: For reduce the number of SocketException.
       var target = uri.GetLeftPart(UriPartial.Authority);
       {
         var r = _socketErrorMap.TryGetValue(target, out var socketError);
         if (r && socketError != SocketError.Success) return;
       }
 
-        // Donwload
+      // Donwload
       var res = default(HttpResponseMessage);
       try
       {
         res = await _client.GetAsync(uri, token);
       }
-      catch (SocketException e)
+      catch (HttpRequestException e) when (e.InnerException is SocketException ex)
       {
-        _socketErrorMap.AddOrUpdate(target, e.SocketErrorCode, (_, _) => e.SocketErrorCode);
-        _logger.LogWarning(e, $"Download failed > {uri.AbsoluteUri}");
+        _socketErrorMap.AddOrUpdate(target, ex.SocketErrorCode, (_, _) => ex.SocketErrorCode);
+        _logger.LogWarning(ex, $"Download failed > {uri.AbsoluteUri}");
         return;
       }
       _socketErrorMap.AddOrUpdate(target, SocketError.Success, (_, _) => SocketError.Success);

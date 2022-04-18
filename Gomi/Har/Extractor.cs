@@ -32,13 +32,12 @@ public class Extractor
       if (content is null) continue;
       var text = content["text"];
       if (text is null) continue;
+      var status = resp["status"]?.GetValue<int>();
+      if (status is null || status != 200) continue;
 
       // Construct FilePath
       var uri = new Uri(url.GetValue<string>());
-      var fileName = Path.GetFileName(uri.AbsolutePath);
-      if (string.IsNullOrEmpty(fileName)) fileName = "index.html";
-      var dir = $"{_options.Destination.FullName}/{uri.Authority}/{Path.GetDirectoryName(uri.AbsolutePath)}/".Replace("//", "/");
-      var filePath = $"{dir}{fileName}";
+      var filePath = FilePathConstructor.ConvertUriToFilePath(_options.Destination, uri);
       if (File.Exists(filePath))
       {
         _existsCount++;

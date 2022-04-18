@@ -9,9 +9,9 @@ public static class Controller
 {
   public static Func<Parameter, Task> Handle = (p) =>
   {
-      // ConfigureServices
-      // NOTE: Move if built-in DI is introduced in System.CommandLine.
-      //  https://github.com/dotnet/command-line-api/issues?q=label%3A%22Area-Hosting+and+DI%22
+    // ConfigureServices
+    // NOTE: Move if built-in DI is introduced in System.CommandLine.
+    //  https://github.com/dotnet/command-line-api/issues?q=label%3A%22Area-Hosting+and+DI%22
     var services = new ServiceCollection();
     var logLevel = LogLevel.Warning;
     if (p.Verbose) logLevel = LogLevel.Information;
@@ -26,7 +26,7 @@ public static class Controller
       .AddScoped<DownloadOptions>(_ => new() { Destination = p.Destination });
     var serviceProvider = services.BuildServiceProvider();
 
-      // 
+    // 
     if (p.Template is not null && p.Csv is not null)
     {
       var downloader = serviceProvider.GetRequiredService<Gomi.TemplateDownload.Downloader>();
@@ -40,8 +40,8 @@ public static class Controller
       return Task.Run(async () =>
       {
         var parsedHar = p.Har.Select(x => JsonObject.Parse(File.ReadAllText(x.FullName))).ToArray();
-        await Task.WhenAll(parsedHar.Select(extractor.ExecuteAsync));
-        await Task.WhenAll(parsedHar.Select(downloader.ExecuteAsync));
+        foreach (var har in parsedHar) await extractor.ExecuteAsync(har);
+        foreach (var har in parsedHar) await downloader.ExecuteAsync(har);
       });
     }
 
