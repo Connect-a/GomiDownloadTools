@@ -11,7 +11,7 @@ public class Downloader
   private readonly DownloadOptions _options;
   private int _downloadCount = 0;
   private int _existsCount = 0;
-  private readonly HashSet<string> _downloadedFiles = new();
+  private readonly ConcurrentDictionary<string, byte> _downloadedFiles = new();
   private readonly ConcurrentDictionary<string, SocketError> _socketErrorMap = new();
 
   public Downloader(ILoggerFactory loggerFactory, DownloadOptions options, HttpClient client)
@@ -31,8 +31,13 @@ public class Downloader
         _existsCount++;
         return;
       }
-      if (_downloadedFiles.Contains(filePath)) return;
-      _downloadedFiles.Add(filePath);
+      if (_downloadedFiles.TryAdd(filePath, 0) == false) return;
+
+      if (Directory.Exists(filePath))
+      {
+        _logger.LogWarning($"File creation failed. A directory with the same name already exists. > {filePath}");
+        return;
+      }
 
       // Check socket connection status.
       // HACK: For reduce the number of SocketException.

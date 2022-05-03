@@ -1,16 +1,19 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Gomi.Core;
+using Microsoft.Extensions.Logging;
 
 namespace Gomi.Har;
 
 public class Extractor
 {
+  private readonly ILogger _logger;
   private readonly DownloadOptions _options;
   private int _existsCount = 0;
 
-  public Extractor(DownloadOptions options)
+  public Extractor(ILoggerFactory loggerFactory, DownloadOptions options)
   {
+    _logger = loggerFactory.CreateLogger<Downloader>();
     _options = options;
   }
 
@@ -44,6 +47,12 @@ public class Extractor
         continue;
       }
 
+      if (Directory.Exists(filePath))
+      {
+        _logger.LogWarning($"File creation failed. A directory with the same name already exists. > {filePath}");
+        return;
+      }
+
       // Extract
       var encoding = content["encoding"];
       Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? "");
@@ -57,7 +66,6 @@ public class Extractor
         await file.WriteAsync(Encoding.UTF8.GetBytes(text.GetValue<string>()));
       }
     }
-
   }
 
   public Task ExecuteAsync(FileInfo harFile) =>
